@@ -67,7 +67,24 @@ class SimditorMarkdown extends Simditor.Button
 
   _initMarkdownValue: ->
     @_fileterUnsupportedTags()
-    @textarea.val toMarkdown(@editor.getValue(), gfm: true)
+    @textarea.val toMarkdown(@editor.getValue(), {
+      gfm: true
+      converters: [
+        {
+          filter: 'br',
+          replacement: (innerHTML, node) ->
+            switch
+              when node.parentNode instanceof window.HTMLBodyElement then '<br>'
+              when node.parentNode instanceof window.HTMLTableCellElement then ''
+              when node.parentNode instanceof window.HTMLParagraphElement
+                if node.parentNode.childNodes.length is 1
+                  '<br>'
+                else
+                  '  \n'
+              else '\n'
+        }
+      ]
+    })
     @_autosizeTextarea()
 
   _autosizeTextarea: ->
@@ -76,8 +93,7 @@ class SimditorMarkdown extends Simditor.Button
 
   _convert: ->
     text = @textarea.val()
-    markdownText = marked(text)
-
+    markdownText = marked(text).replace(/<em>/g, '<i>').replace(/<\/em>/g, '</i>')
     @editor.textarea.val markdownText
     @editor.body.html markdownText
 
